@@ -4419,7 +4419,8 @@ var WXR9={key:'',rbT:0,exT:0,exp:0,cov:0,nextL:4,bolts:[],spl:null,splD:[],tipT:
   var n=120,P=new Float32Array(n*3);for(var i=0;i<n;i++){P[i*3+1]=-999;WXR9.splD.push({l:0})}
   var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));WXR9.spl=new THREE.Points(g,new THREE.PointsMaterial({color:0xc8d8ff,size:.07,sizeAttenuation:true,transparent:true,opacity:.75,depthWrite:false}));
   WXR9.spl.frustumCulled=false;scene.add(WXR9.spl);
-  try{sunM.material.transparent=true;moonM.material.transparent=true;moonM.material.alphaTest=.04}catch(e){}})();
+  // Sonne und Mond bleiben im ersten Zeichendurchgang (hinter der Welt); Ausblenden bei Regen über eigenes Mischen statt "transparent"
+  try{[sunM,moonM].forEach(function(m){m.material.transparent=false;m.material.blending=THREE.CustomBlending;m.material.needsUpdate=true});moonM.material.alphaTest=.1}catch(e){}})();
 function wxRR9(){return[5,7,8][OPT.gfx]||7}
 function wxSurf9(x,z){var t=topAt(x,z);if(t<0)return -1;var y=t+1;while(y<WY-1&&get(x,y,z)==14)y++;return y}
 function wxBuild9(){var px=Math.floor(pos.x),py=Math.floor(pos.y),pz=Math.floor(pos.z),RR=wxRR9(),A=[[],[]],S=[[],[]],I=[[],[]],ys=Math.max(1,py-Math.round(RR*1.4)),ye=py+12;
