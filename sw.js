@@ -1,5 +1,5 @@
 // Blockwelt – speichert die App, damit sie auch ohne Internet startet.
-var V='blockwelt-v36';
+var V='blockwelt-v37';
 var CORE=['./','./index.html','./manifest.webmanifest','./icon-180.png','./icon-192.png','./icon-512.png'];
 var CDN='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
 self.addEventListener('install',function(e){

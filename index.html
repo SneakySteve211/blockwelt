@@ -1726,7 +1726,7 @@ function step(dt){
   var guard=0;while(hit(pos.x,pos.y,pos.z)&&guard++<12)pos.y+=.25;
   var iwS=wat(pos.x,pos.y+.5,pos.z),sp=iwS?1.8:4.4*(SNK?.3:SPR?1.3:1),fwd=-stick.y,str=stick.x;
   var gbS=onGround?get(Math.floor(pos.x),Math.floor(pos.y-.05),Math.floor(pos.z)):0,webS=get(Math.floor(pos.x),Math.floor(pos.y+.3),Math.floor(pos.z))==163||get(Math.floor(pos.x),Math.floor(pos.y+1.3),Math.floor(pos.z))==163;
-  if(onGround)iceL=gbS==159||gbS==160?1:gbS==161?2:0;if(gbS==167)sp*=.62;if(iceL)sp*=1.12;if(webS)sp*=.2;
+  if(onGround)iceL=gbS==159||gbS==160?1:gbS==161?2:0;if(gbS==167)sp*=.62;if(iceL)sp*=1.12;if(webS)sp*=.2;if(EFF9.slow>0)sp*=.7;
   var tx=(-Math.sin(yaw)*fwd+Math.cos(yaw)*str)*sp,tz=(-Math.cos(yaw)*fwd-Math.sin(yaw)*str)*sp;
   if(iwS){wvx+=(tx-wvx)*Math.min(1,3.5*dt);wvz+=(tz-wvz)*Math.min(1,3.5*dt);tx=wvx;tz=wvz}else if(iceL){var ia=Math.min(1,(iceL==2?.55:1.1)*dt*(onGround?1:.4));wvx+=(tx-wvx)*ia;wvz+=(tz-wvz)*ia;tx=wvx;tz=wvz}else{wvx=tx;wvz=tz}
   if(pkbx||pkbz){tx+=pkbx;tz+=pkbz;var kd6=Math.max(0,1-4*dt);pkbx*=kd6;pkbz*=kd6;if(Math.abs(pkbx)+Math.abs(pkbz)<.1)pkbx=pkbz=0}
@@ -2254,7 +2254,7 @@ var hpEl=document.getElementById('hp'),airEl=document.getElementById('air'),redE
 function hurt(n){if(deadT>0||GM9==1||GM9==3)return;hp=Math.max(0,hp-n);hurtT=.35;drawHP();SND.hurt()}
 function survival(dt){
   if(deadT>0){deadT-=dt;if(deadT<=0){hp=20;air=10;food=20;sat=5;exh=0;respawn();drawHP();drawFood();document.getElementById('dead').style.display='none'}return}
-  if(hp<=0){SND.die();deadT=2.2;document.getElementById('dead').style.display='flex';chatMsg9(under?'Du bist ertrunken':'Du bist gestorben','sys');FLY9=false;return}
+  if(hp<=0){SND.die();deadT=2.2;document.getElementById('dead').style.display='flex';deathMsg9();FLY9=false;return}
   if(GM9==1||GM9==3){if(food<20||sat<5){food=20;sat=5;drawFood()}if(hp<20){hp=20;drawHP()}exh=0;air=10;airT=0;hurtT=Math.max(0,hurtT-dt);redEl.style.opacity=hurtT*1.3;drawAir();return}
   if(OPT.diff==0){if(food<20){food=20;drawFood()}if(sat<5)sat=5;exh=0}
   if(under){air=Math.max(0,air-dt);if(air<=0){airT+=dt;if(airT>=1){airT=0;hurt(2)}}}else{air=Math.min(10,air+dt*6);airT=0}
@@ -2526,7 +2526,7 @@ drawHP();drawFood();
 var eatT=0,eatId=0,eatSnd=0;
 function startEat(){var id=heldId(),f=FOOD[id];if(f==null||eatT>0)return;if(id!=111&&food>=20){toast('Du bist satt',1.2);return}eatT=1.6;eatId=id;eatSnd=0;EATOFF=OFFTAP}
 function updEat(dt){if(eatT<=0)return;if((EATOFF?offId():heldId())!==eatId){eatT=0;return}eatT-=dt;eatSnd-=dt;if(eatSnd<=0){eatSnd=.22;if(eatId==111)SND.drink();else SND.eat()}
-  if(eatT<=0){var f=FOOD[eatId];food=Math.min(20,food+f[0]);sat=Math.min(food,sat+f[1]);drawFood();if(eatId==172){regenT=5;regenA=0}
+  if(eatT<=0){var f=FOOD[eatId];food=Math.min(20,food+f[0]);sat=Math.min(food,sat+f[1]);drawFood();if(eatId==172){regenT=5;regenA=0}eatFx9(eatId);
     if(EATOFF)offEaten(eatId);else if(eatId==108)swapHeld(107);else if(eatId==111)swapHeld(109);else use1(cur);SND.burp()}}
 // Schlafen im Bett: nur nachts, überspringt die Nacht und setzt den Spawnpunkt
 function eatCake(h){var k=h[0]+','+h[1]+','+h[2];if(food>=20){toast('Du bist satt',1.2);return}food=Math.min(20,food+2);sat=Math.min(food,sat+.4);drawFood();SND.eat();var bt=(DD[k]||0)+1;if(bt>6){set(h[0],h[1],h[2],0);delete DD[k]}else DD[k]=bt;rebuildAt(h[0],h[2])}
@@ -2534,7 +2534,7 @@ var sleeping=0;
 function sleepIn(h){if(sleeping>0)return;var t=(dayT%DAYLEN)/DAYLEN*24000;
   SPAWN={x:h[0]+.5,y:h[1]+1,z:h[2]+.5};
   if((t<12542||t>23459)&&!(WX9.t>.5)){toast('Du kannst nur nachts schlafen – Spawnpunkt gesetzt',2.4);return}
-  sleeping=3.2;sleepEl.style.opacity=1;toast('Gute Nacht …',2)}
+  if(monNear9(8)){toast('Du kannst jetzt nicht schlafen, es sind Monster in der Nähe',2.6);return}sleeping=3.2;sleepEl.style.opacity=1;toast('Gute Nacht …',2)}
 function updSleep(dt){if(sleeping<=0)return;sleeping-=dt;if(sleeping<1.6&&sleepEl.style.opacity=='1'){dayT=(Math.floor(dayT/DAYLEN)+1)*DAYLEN+1;wxWake9();sleepEl.style.opacity=0;toast('Guten Morgen! Spawnpunkt gesetzt',2.4)}}
 // Ackerboden: Bewässerung (Wasser bis 4 Blöcke entfernt) und Wachstum
 function waterNear(x,y,z){for(var dx=-4;dx<=4;dx++)for(var dz=-4;dz<=4;dz++)for(var dy=0;dy<=1;dy++)if(get(x+dx,y+dy,z+dz)==14)return true;return false}
@@ -2711,7 +2711,7 @@ function particle(kind,x,y,z){if(PARTS.length>40)return;if(OPT.part==2||(OPT.par
   var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,transparent:true,depthWrite:false}));var s=kind=='h'?.32:.28+Math.random()*.2;sp.scale.set(s,s,s);sp.position.set(x,y,z);scene.add(sp);
   PARTS.push({s:sp,vx:(Math.random()-.5)*.6,vy:kind=='h'?.8:.5+Math.random()*.5,vz:(Math.random()-.5)*.6,life:kind=='h'?1.1:.7+Math.random()*.4})}
 function updParts(dt){for(var i=PARTS.length-1;i>=0;i--){var p=PARTS[i];p.life-=dt;if(p.life<=0){scene.remove(p.s);p.s.material.dispose();PARTS.splice(i,1);continue}p.s.position.x+=p.vx*dt;p.s.position.y+=p.vy*dt;p.s.position.z+=p.vz*dt;p.s.material.opacity=Math.min(1,p.life*2)}}
-function mobDrops(m){var R=Math.random,i,n,o=[];if(m.baby)return o;
+function mobDrops(m){var R=Math.random,i,n,o=[];if(m.baby&&!MT[m.t].mon)return o;
   if(m.t==0){n=1+(R()*3|0);for(i=0;i<n;i++)o.push(96)}
   else if(m.t==1){n=R()*3|0;for(i=0;i<n;i++)o.push(104);n=1+(R()*3|0);for(i=0;i<n;i++)o.push(98)}
   else if(m.t==2){if(!m.sheared)o.push(WOOLID[m.col]);n=1+(R()*2|0);for(i=0;i<n;i++)o.push(100)}
@@ -2720,7 +2720,7 @@ function mobDrops(m){var R=Math.random,i,n,o=[];if(m.baby)return o;
 function hurtMob(m,dmg,fx,fz){if(m.inv>0||m.dead)return;m.hp-=dmg;m.inv=.5;m.hurtT=.45;var dx=m.x-fx,dz=m.z-fz,l=Math.hypot(dx,dz)||1;m.vx=dx/l*5.5;m.vz=dz/l*5.5;m.vy=5.5;m.onG=false;m.kb=.35;m.panic=5;m.tgt=null;m.eat=0;m.love=0;
   if(m.hp<=0){m.dead=true;m.deadT=0;SND.mob(m.t,'die',mobVol(m)+.3,m.col)}else SND.mob(m.t,'hurt',mobVol(m)+.3,m.col);mobHurt9(m,fx,fz)}
 function mobKill(m){for(var i=0;i<6;i++)particle('s',m.x+(Math.random()-.5)*.6,m.y+.3+Math.random()*.5,m.z+(Math.random()-.5)*.6);
-  mobDrops(m).forEach(function(id){spawnItem(id,m.x,m.y+.5,m.z)});if(!m.baby&&!m.pk9)spawnXP(m.x,m.y+.5,m.z,1+(Math.random()*3|0));if(m.t==22&&m.tame)toast('Dein Wolf ist gestorben',2.2);mobDeact(m);var ix=MOBS.indexOf(m);if(ix>=0)MOBS.splice(ix,1)}
+  mobDrops(m).forEach(function(id){spawnItem(id,m.x,m.y+.5,m.z)});if((!m.baby||MT[m.t].mon)&&!m.pk9)spawnXP(m.x,m.y+.5,m.z,MT[m.t].xp?Math.round(MT[m.t].xp*(m.baby?2.4:1)):1+(Math.random()*3|0));if(m.t==22&&m.tame)toast('Dein Wolf ist gestorben',2.2);mobDeact(m);var ix=MOBS.indexOf(m);if(ix>=0)MOBS.splice(ix,1)}
 function updMob(m,dt,now){var T=MT[m.t],sc=mobScale(m),ht=T.ht*sc;m.hwB=T.hw*sc;
   if(m.inv>0)m.inv-=dt;if(m.hurtT>0)m.hurtT-=dt;if(m.kb>0)m.kb-=dt;if(m.cd>0)m.cd-=dt;
   if(T.upd){T.upd(m,dt,now);return}
@@ -2753,8 +2753,8 @@ function updMob(m,dt,now){var T=MT[m.t],sc=mobScale(m),ht=T.ht*sc;m.hwB=T.hw*sc;
   if(goal){var dx=goal.x-m.x,dz=goal.z-m.z,dl=Math.hypot(dx,dz);m.tT-=dt;
     if(dl<.45||m.tT<=0){if(goal===m.tgt)m.tgt=null}else{mvx=dx/dl;mvz=dz/dl}}
   // Klippen und Wasser meiden (außer bei Panik)
-  if((mvx||mvz)&&m.onG&&!iw&&m.ram!=2){var nx=m.x+mvx*.7,nz=m.z+mvz*.7,dr=groundBelow(nx,m.y,nz);if(dr>(m.t==5?4:2)&&!m.panic){mvx=mvz=0;m.tgt=null}
-    else if(!m.panic&&m.t!=6&&get(Math.floor(nx),Math.floor(m.y),Math.floor(nz))==14){mvx=mvz=0;m.tgt=null}}
+  if((mvx||mvz)&&m.onG&&!iw&&m.ram!=2){var nx=m.x+mvx*.7,nz=m.z+mvz*.7,dr=groundBelow(nx,m.y,nz);if(dr>(m.t==5?4:T.mon&&m.tg9?3:2)&&!m.panic){mvx=mvz=0;m.tgt=null}
+    else if(!m.panic&&m.t!=6&&!(T.mon&&m.tg9)&&get(Math.floor(nx),Math.floor(m.y),Math.floor(nz))==14){mvx=mvz=0;m.tgt=null}}
   if((m.t==4||m.t==6)&&(mvx||mvz)&&m.onG&&!iw){m.vy=m.t==6?4.4:5.2;m.onG=false}
   var swm=iw?(m.t==6?1.4:.6):1,tvx=mvx*spd*swm,tvz=mvz*spd*swm;
   if(m.kb<=0){var ac=Math.min(1,(m.onG?10:2.5)*dt);m.vx+=(tvx-m.vx)*ac;m.vz+=(tvz-m.vz)*ac}
@@ -2791,7 +2791,7 @@ function breed(a,b){a.love=b.love=0;a.cd=b.cd=300;var bb=newMob(a.t,(a.x+b.x)/2,
 function syncMob(m){var g=m.grp,sc=mobScale(m);g.position.set(m.x,m.y+(m.oy||0),m.z);if(m.t>=20)g.rotation.order='YXZ';g.rotation.set(m.pt||0,m.yaw,m.dead?Math.min(1,m.deadT*1.6)*1.5708:0);g.scale.set(sc,sc,sc);
   m.parts.forEach(function(p){p.mesh.rotation.set(p.rx,p.ry,p.rz)});
   var fx=Math.floor(m.x),fz=Math.floor(m.z),tp=topAt(fx,fz),dep=Math.max(0,tp-m.y-1),br=Math.max(DAYB*(1-Math.min(.6,dep*.1))*(m.sh9||1),lvAt(fx,Math.floor(m.y+.5),fz)/14*.95);
-  if(m.hurtT>0||m.dead)m.mat.color.setRGB(br,br*.45,br*.45);else m.mat.color.setRGB(br,br,br)}
+  if(m.hurtT>0||m.dead)m.mat.color.setRGB(br,br*.45,br*.45);else if(m.fire9>0)m.mat.color.setRGB(Math.min(1,br*1.15),br*.92,br*.78);else m.mat.color.setRGB(br,br,br)}
 function updMobs(dt){mobT+=dt;var i,m;
   fishSpawn(dt);
   while(NEWCH.length){var c=NEWCH.pop();if(CHM.get(c.k)!==c||MSP[c.k])continue;MSP[c.k]=1;spawnInChunk(c)}
@@ -3187,7 +3187,7 @@ function preyNear9(m,types,r){var best=null,bd=r;for(var i=0;i<ACT.length;i++){v
 function wolfHunt9(m,dt){if(m.hcd9==null)m.hcd9=15+Math.random()*45;
   if(m.hunt9&&!m.atk){m.hunt9=0;m.hcd9=m.hpr9&&m.hpr9.dead?90+Math.random()*90:20+Math.random()*25;m.hpr9=null}
   if(m.atk||m.baby||m.panic>0||m.love>0)return;m.hcd9-=dt;if(m.hcd9>0)return;m.hcd9=6+Math.random()*6;
-  var p=preyNear9(m,[2,4],16);if(!p)return;m.atk=p;m.ang=30;m.hunt9=1;m.hpr9=p;SND.wolf('growl',mobVol(m)*.8);
+  var p=preyNear9(m,[2,4,25],16);if(!p)return;m.atk=p;m.ang=30;m.hunt9=1;m.hpr9=p;SND.wolf('growl',mobVol(m)*.8);
   MOBS.forEach(function(o){if(o!==m&&o.t==22&&!o.tame&&!o.baby&&!o.atk&&o.act&&Math.hypot(o.x-m.x,o.z-m.z)<10&&Math.random()<.6){o.atk=p;o.ang=30;o.hunt9=1;o.hpr9=p}})}
 // Füchse schleichen sich an Hühner und Kaninchen heran, springen auf sie und tragen die Beute im Maul davon
 function foxHunt9(m,dt,pd,A){var T=MT[21];if(m.hcd9==null)m.hcd9=10+Math.random()*30;if(m.bcd9>0)m.bcd9-=dt;
@@ -3209,6 +3209,144 @@ function foxHunt9(m,dt,pd,A){var T=MT[21];if(m.hcd9==null)m.hcd9=10+Math.random(
   if(!m.onG)return true;
   if(d<1.3&&Math.abs(p.y-m.y)<1.5&&!(m.bcd9>0)){m.bcd9=.8;predHit9(m,p,2)}
   A.g={x:p.x,z:p.z};A.s=T.sp*2.3;m.tT=1;return true}
+// ---------- Version 58: Monster wie in Minecraft – Zombie (24), Skelett (25), Spinne (26) ----------
+// Varianten: Wüstenzombie (Zombie, Farbe 1: verbrennt nicht, macht Hunger), Eiswanderer (Skelett, Farbe 1: Pfeile machen langsam)
+var ZOMV9=[{sk:['#6b9c47','#639242','#72a34d','#5f8d3f'],hr:['#4a7334','#456c30','#4f7a37'],ey:'#101010',ed:'#24361a',ns:'#4f7a36',mo:'#3b5828',sh:['#00a0a3','#03979a','#08aaad'],sd:['#007a7d','#027275'],pa:['#3a3c9c','#343692','#4042a6'],so:['#4a4a4a','#555555']},
+  {sk:['#ad9873','#a38e6a','#b6a17c','#9e8966'],hr:['#7d6a4c','#756346','#86724f'],ey:'#1a120a',ed:'#3b2f20',ns:'#8a785a',mo:'#665640',sh:['#6f5d43','#67563e','#77644a'],sd:['#54452f','#4e402c'],pa:['#4d3f2f','#46392b','#544535'],so:['#3a3026','#332a21']}];
+function zombieDef(col){var V=ZOMV9[col&1]||ZOMV9[0];
+  function headP(f,u,v,W,H){if(f=='py')return V.hr[(u*3+v)%V.hr.length];
+    if(f=='nz'){if(v<2||(v==2&&(u==0||u==7)))return V.hr[(u+v)%V.hr.length];if(v==4&&(u==1||u==2||u==5||u==6))return(u==2||u==5)?V.ey:V.ed;if(v==5&&(u==3||u==4))return V.ns;if(v==6&&u>=2&&u<=5)return V.mo;return null}
+    if(v<2||(v==2&&(u*5)%3==0))return V.hr[(u+v)%V.hr.length];return null}
+  function armP(f,u,v,W,H){if(f=='py'||(f!='ny'&&v<4))return v==3&&f!='py'?V.sd[u%2]:V.sh[(u+v)%V.sh.length];return null}
+  function bodyP(f,u,v,W,H){if(f=='ny'||(f!='py'&&v>=H-2))return V.pa[(u+v)%V.pa.length];if(f=='nz'&&v==0&&(u==3||u==4))return V.sk[0];if((u*5+v*3)%11==0)return V.sd[(u+v)%2];return null}
+  function legP(f,u,v,W,H){if(f=='ny'||(f!='py'&&v>=H-2))return V.so[(u+v)%2];return null}
+  return{parts:[{n:'body',pv:[0,24,0],b:[{f:[-4,12,-2],s:[8,12,4],c:V.sh,p:bodyP}]},
+    {n:'head',pv:[0,24,0],b:[{f:[-4,24,-4],s:[8,8,8],c:V.sk,p:headP}]},
+    {n:'armR',pv:[5,22,0],b:[{f:[4,12,-2],s:[4,12,4],c:V.sk,p:armP}]},{n:'armL',pv:[-5,22,0],b:[{f:[-8,12,-2],s:[4,12,4],c:V.sk,p:armP}]},
+    {n:'leg',pv:[2,12,0],b:[{f:[0,0,-2],s:[4,12,4],c:V.pa,p:legP}]},{n:'leg',pv:[-2,12,0],b:[{f:[-4,0,-2],s:[4,12,4],c:V.pa,p:legP}]}]}}
+var SKV9=[{b:['#c6c6c6','#bcbcbc','#d0d0d0','#c2c2c2'],d:['#8e8e8e','#858585'],g:'#4a4a4a',e:'#141414'},
+  {b:['#b9c6c8','#afbcbe','#c3cfd1','#b4c1c3'],d:['#83908f','#7a8786'],g:'#3e4a4c',e:'#0e1416',rag:['#566e72','#4e666a','#5e777b'],rd:['#3c4e52','#36474a']}];
+// Bogen in der rechten Hand: hängt der Arm, liegt er waagerecht; wird der Arm zum Zielen gehoben, steht er senkrecht
+var BOW9=(function(){var W=['#7a5230','#6e4a2a','#865a36'],S=['#e8e8e8','#dcdcdc'];
+  return[{f:[4.4,10.5,-1],s:[1.2,2,2],c:W},{f:[4.5,11.5,1],s:[1,1.5,2.5],c:W},{f:[4.5,11.5,-3.5],s:[1,1.5,2.5],c:W},{f:[4.5,13,3.5],s:[1,1.5,2],c:W},{f:[4.5,13,-5.5],s:[1,1.5,2],c:W},{f:[4.85,14.4,-5.5],s:[.3,.3,11],c:S}]})();
+function skelDef(col){var V=SKV9[col&1]||SKV9[0];
+  function boneP(f,u,v,W,H){if((u*7+v*13)%17==0)return V.d[(u+v)%2];return null}
+  function skullP(f,u,v,W,H){if(f=='nz'){if((v==3||v==4)&&(u==1||u==2||u==5||u==6))return V.e;if(v==5&&(u==3||u==4))return V.g;if(v==6&&u>=1&&u<=6)return u%2?V.g:V.b[0];if(v==2&&(u==1||u==6))return V.d[0];return null}
+    if(f=='ny')return V.d[(u+v)%2];return boneP(f,u,v,W,H)}
+  function ragP(f,u,v,W,H){if(v>=H-1&&u%2)return V.rd[0];if((u*3+v*5)%7==0)return V.rd[(u+v)%2];return null}
+  var body=[{f:[-1,12,0],s:[2,12,2],c:V.b,p:boneP},{f:[-4,22.5,-2],s:[8,1.5,4],c:V.b,p:boneP},{f:[-4,20,-2],s:[8,1.5,4],c:V.b,p:boneP},{f:[-4,17.5,-2],s:[8,1.5,4],c:V.b,p:boneP},{f:[-3.5,15,-1.5],s:[7,1.5,3],c:V.b,p:boneP},{f:[-4,12,-1.5],s:[8,2,3],c:V.b,p:boneP}],
+    armR=[{f:[4,12,-1],s:[2,12,2],c:V.b,p:boneP}].concat(BOW9),armL=[{f:[-6,12,-1],s:[2,12,2],c:V.b,p:boneP}],legR=[{f:[1,0,-1],s:[2,12,2],c:V.b,p:boneP}],legL=[{f:[-3,0,-1],s:[2,12,2],c:V.b,p:boneP}];
+  if(V.rag){body.push({f:[-4.4,14,-2.4],s:[8.8,10.4,4.8],c:V.rag,p:ragP});legR.push({f:[.6,6,-1.4],s:[2.8,6.4,2.8],c:V.rag,p:ragP});legL.push({f:[-3.4,6,-1.4],s:[2.8,6.4,2.8],c:V.rag,p:ragP});
+    armR.push({f:[3.6,18,-1.4],s:[2.8,6.4,2.8],c:V.rag,p:ragP});armL.push({f:[-6.4,18,-1.4],s:[2.8,6.4,2.8],c:V.rag,p:ragP})}
+  return{parts:[{n:'body',pv:[0,24,0],b:body},{n:'head',pv:[0,24,0],b:[{f:[-4,24,-4],s:[8,8,8],c:V.b,p:skullP}]},
+    {n:'armR',pv:[5,22,0],b:armR},{n:'armL',pv:[-5,22,0],b:armL},{n:'leg',pv:[2,12,0],b:legR},{n:'leg',pv:[-2,12,0],b:legL}]}}
+// Spinne: Kopf mit acht roten Augen, Bruststück, großer Hinterleib, acht lange Beine
+var SPV9={b:['#3a312a','#332b25','#40362e','#2d2620'],l:['#4f443a','#574b40'],d:['#211b16','#1c1713'],e:'#c41414',E:'#ff3030'};
+var SPFACE9=['dddddddd','bbbbbbbb','bbbeebbb','bEEbbEEb','bEEbbEEb','ebbbbbbe','bbdbbdbb','bbbbbbbb'];
+function spiderDef(col){var V=SPV9;
+  function headP(f,u,v,W,H){if(f=='nz'){var ch=SPFACE9[v]&&SPFACE9[v][u];return ch=='E'?V.E:ch=='e'?V.e:ch=='d'?V.d[(u+v)%2]:null}if(f=='py'&&(u+v*3)%5==0)return V.l[0];return null}
+  function abdP(f,u,v,W,H){if(f=='py'){var cx=Math.abs(u-(W-1)/2);if(cx<1.5&&v%3!=2)return V.l[(u+v)%2];if((u*7+v*5)%9==0)return V.d[0];return null}if(f=='ny')return V.d[(u+v)%2];if((u*5+v*3)%7==0)return V.l[0];return null}
+  function legP(f,u,v,W,H){if(f!='px'&&f!='nx'&&u%5==4)return V.d[0];if(f=='ny')return V.d[1];return null}
+  var P=[{n:'body',pv:[0,9,0],b:[{f:[-3,6,-5],s:[6,6,6],c:V.b},{f:[-5,5,1],s:[10,8,12],c:V.b,p:abdP}]},{n:'head',pv:[0,9,-5],b:[{f:[-4,5,-13],s:[8,8,8],c:V.b,p:headP}]}];
+  for(var k=0;k<4;k++){var z=-4+k*1.33;P.push({n:'sleg',pv:[3,9,z],b:[{f:[3,8,z-1],s:[16,2,2],c:V.b,p:legP}]});P.push({n:'sleg',pv:[-3,9,z],b:[{f:[-19,8,z-1],s:[16,2,2],c:V.b,p:legP}]})}
+  return{parts:P}}
+MDEF[24]=zombieDef;MDEF[25]=skelDef;MDEF[26]=spiderDef;
+MT[24]={n:'Zombie',hp:20,hw:.3,ht:1.95,sp:3,tempt:{},ns:1,mon:1,xp:5};
+MT[25]={n:'Skelett',hp:20,hw:.3,ht:1.99,sp:2.8,tempt:{},ns:1,mon:1,xp:5};
+MT[26]={n:'Spinne',hp:16,hw:.7,ht:.9,sp:3.6,tempt:{},ns:1,mon:1,xp:5};
+// ---- Neue Gegenstände: Verrottetes Fleisch (von Zombies) und Spinnenauge (von Spinnen)
+(function(){NAME[338]='Verrottetes Fleisch';NAME[339]='Spinnenauge';FOOD[338]=[4,.8];FOOD[339]=[2,3.2];MEAT9[338]=4;
+  ICO[338]=['................','................','......kkk.......','.....kRRrk......','....kRrrGrk.....','...krGrrrrrk....','...krrrgrRrrk...','..kRrrrrrrGrk...','..kgrRrrrgrrk...','...krrrgrRrrk...','....krGrrrrk....','.....krrgrk.....','......kkkk......','................','................','................',{k:'#3a1e14',r:'#8e4a32',R:'#b06548',g:'#6e7a3a',G:'#8a9a48'}];
+  ICO[339]=['................','................','................','.....kkkkkk.....','....kRRrrRRk....','...kRrrrrrrRk...','...krrrPPrrrk...','...krrPPPPrrk...','...krrPPPPrrk...','...krrrPPrrrk...','...kRrrrrrrRk...','....kRRrrRRk....','.....kkkkkk.....','................','................','................',{k:'#3a0e12',r:'#a4202c',R:'#d8505a',P:'#2a0a2e'}]})();
+// ---- Zustand
+var KILL9=null,EFF9={hun:0,poi:0,poiA:0,slow:0,on:''};
+function isMon9(t){return t>=24&&t<=26}
+function skyK9(){var cs=Math.cos(celAngle()*2*Math.PI);return Math.max(0,Math.min(1,cs*2+.5))}
+function paused9(){try{if(craftEl.style.display=='block'&&cn==-2)return true;if(window.BWOPT&&BWOPT.isOpen())return true}catch(e){}return false}
+function monOK9(){return hp>0&&deadT<=0&&(GM9==0||GM9==2)&&OPT.diff>0&&!(sleeping>0)&&!paused9()}
+function monName9(m){return m.t==24?((m.col&1)?'Wüstenzombie':m.baby?'Babyzombie':'Zombie'):m.t==25?((m.col&1)?'Eiswanderer':'Skelett'):'Spinne'}
+// Sichtlinie vom Monster zum Spieler (Glas, Laub und Pflanzen lassen durchsehen)
+function los9(m){var ht=MT[m.t].ht*mobScale(m),x0=m.x,y0=m.y+ht*.85,z0=m.z,dx=pos.x-x0,dy=pos.y+1.55-y0,dz=pos.z-z0,L=Math.sqrt(dx*dx+dy*dy+dz*dz),n=Math.ceil(L/.35);
+  for(var i=1;i<n;i++){var t=i/n,q=get(Math.floor(x0+dx*t),Math.floor(y0+dy*t),Math.floor(z0+dz*t));if(q&&q!=14&&SOL[q]===1&&q!=9&&q!=140&&!lpass(q))return false}return true}
+// Zombies und Skelette fangen im Sonnenlicht Feuer (nicht im Regen, im Wasser oder im Schatten)
+function monSun9(m,dt,ht){if(m.t==26||(m.t==24&&(m.col&1)))return;m.sunT9=(m.sunT9||0)-dt;if(m.sunT9>0)return;m.sunT9=.5;
+  var fx=Math.floor(m.x),fz=Math.floor(m.z);if(skyK9()>.55&&!(WX9.r>.25)&&!wat(m.x,m.y+.3,m.z)&&topAt(fx,fz)<Math.floor(m.y+ht*.9))m.fire9=Math.max(m.fire9||0,3)}
+function monFire9(m,dt){if(!(m.fire9>0))return;m.fire9-=dt;if(wat(m.x,m.y+.3,m.z)){m.fire9=0;return}
+  var fh=MT[m.t].ht*mobScale(m),fn=Math.random()<dt*34?2:Math.random()<dt*20?1:0;for(var fi=0;fi<fn;fi++)flame9(m.x+(Math.random()-.5)*.55,m.y+.1+Math.random()*fh*.95,m.z+(Math.random()-.5)*.55);
+  m.fT9=(m.fT9||0)-dt;if(m.fT9<=0){m.fT9=1;if(!m.dead){m.hp-=1;m.hurtT=.3;if(m.hp<=0){m.dead=true;m.deadT=0;m.pk9=1;SND.mob(m.t,'die',mobVol(m)+.2,m.col)}else SND.mob(m.t,'hurt',mobVol(m)*.7,m.col)}}}
+// Treffer am Spieler
+function monHit9(m,dmg,nx,nz,arrow){if(!monOK9()||!(dmg>0))return;hurtA(dmg);pkbx=nx*(arrow?3:5.5);pkbz=nz*(arrow?3:5.5);if(onGround&&!arrow)vy=Math.max(vy,4.2);
+  if(m&&m.t!=null&&m.t>=0){LATK9={m:m,t:mobT};KILL9={at:mobT,msg:'Du wurdest von '+(m.t==26?'einer ':'einem ')+monName9(m)+(arrow?' erschossen':' getötet')};
+    if(m.t==24&&(m.col&1))EFF9.hun=Math.max(EFF9.hun,7*OPT.diff);if(m.t==25&&(m.col&1)&&arrow)EFF9.slow=Math.max(EFF9.slow,8)}}
+// Umweg, wenn das Monster an einer Wand hängt (Minecraft-Monster finden ihren Weg um Hindernisse)
+function monPath9(m,dt,g){if(m.clb9>0)return g;if(m.dT9>0){m.dT9-=dt;return m.dg9}
+  if(m.blk>.5){var dx=g.x-m.x,dz=g.z-m.z,l=Math.hypot(dx,dz)||1,s=Math.random()<.5?1:-1;m.dg9={x:m.x-dz/l*s*4+dx/l,z:m.z+dx/l*s*4+dz/l};m.dT9=1.1;m.blk=0;return m.dg9}
+  return g}
+function monPick9(m,r){for(var k=0;k<6;k++){var a=mobRN()*6.283,d=2+mobRN()*r,tx=m.x+Math.cos(a)*d,tz=m.z+Math.sin(a)*d,y=Math.floor(m.y);
+    for(var dy=1;dy>=-2;dy--){var yy=y+dy;if(!solid(tx,yy+.1,tz)&&!solid(tx,yy+1.1,tz)&&solid(tx,yy-.9,tz)&&get(Math.floor(tx),yy,Math.floor(tz))!=14)return{x:tx,z:tz}}}return null}
+function monWander9(m,dt,A){if(m.wt9){var dx=m.wt9.x-m.x,dz=m.wt9.z-m.z;if(dx*dx+dz*dz<.3||(m.wT9-=dt)<=0)m.wt9=null}
+  if(!m.wt9){m.idle-=dt;if(m.idle<=0){m.idle=3+mobRN()*7;if(mobRN()<.6){m.wt9=monPick9(m,7);m.wT9=7}}}
+  A.g=m.wt9;A.s=m.t==26?1.4:1.1;m.tT=1;if(m.t==26&&m.wt9)spClimb9(m,A);return true}
+// Spinnen klettern Wände hoch
+function spClimb9(m,A){if(!A.g)return;var dx=A.g.x-m.x,dz=A.g.z-m.z,l=Math.hypot(dx,dz);if(l<.3)return;var e=MT[26].hw+.2,fx=m.x+dx/l*e,fz=m.z+dz/l*e;
+  if((solid(fx,m.y+.02,fz)||solid(fx,m.y+.3,fz)||solid(fx,m.y+.8,fz))&&!solid(m.x,m.y+MT[26].ht+.25,m.z)){m.vy=Math.max(m.vy,3.4);m.onG=false;m.clb9=.2;m.blk=0;m.dT9=0}}
+function monAI9(m,dt,pd,A){var T=MT[m.t],sc=mobScale(m),ht=T.ht*sc;m.panic=0;m.flee=0;if(m.cd9>0)m.cd9-=dt;if(m.sw9>0)m.sw9-=dt;if(m.clb9>0)m.clb9-=dt;
+  if(m.baby)m.age=1e9;
+  monSun9(m,dt,ht);monFire9(m,dt);
+  if(paused9()){A.g=null;A.s=0;return true}
+  var ok=monOK9(),day=skyK9()>.55,dx=pos.x-m.x,dz=pos.z-m.z,d=Math.hypot(dx,dz),dy=pos.y-m.y;
+  if(m.ang9>0)m.ang9-=dt;
+  // Spinnen sind tagsüber im Hellen friedlich, solange man sie nicht angreift
+  var calm=m.t==26&&day&&!(m.ang9>0)&&topAt(Math.floor(m.x),Math.floor(m.z))<m.y+1;
+  m.lT9=(m.lT9||0)-dt;if(m.lT9<=0){m.lT9=.3;m.see9=ok&&pd<40?los9(m):false}
+  if(!ok||calm||pd>40)m.tg9=false;
+  else if(!m.tg9){var R=m.t==24?24:16;if((pd<R&&m.see9)||pd<(m.t==26?5:7)||m.ang9>0){m.tg9=true;if(typeof BWTIPS!='undefined')BWTIPS.show('monster');if(pd<16)SND.mob(m.t,'say',mobVol(m)+.2,m.col)}}
+  if(!m.tg9){m.aim9=0;return monWander9(m,dt,A)}
+  m.look=1;m.wt9=null;
+  if(m.t==25)return skelAI9(m,dt,d,dx,dz,A);
+  // Zombie und Spinne laufen hin und schlagen zu; die Spinne springt einen an
+  A.g=d<T.hw*sc+.62?null:monPath9(m,dt,{x:pos.x,z:pos.z});A.s=m.t==24&&m.baby?4.6:T.sp;m.tT=1;
+  if(m.t==26){spClimb9(m,A);if(d>1.8&&d<4.2&&m.onG&&!(m.cd9>.3)&&Math.abs(dy)<1.5&&m.see9&&Math.random()<dt*2.2){m.vx=dx/d*5.6;m.vz=dz/d*5.6;m.vy=5.4;m.onG=false;m.kb=.45}}
+  if(d<T.hw*sc+.95&&dy>-1.2&&dy<ht+.3&&!(m.cd9>0)){m.cd9=1;m.sw9=.35;monHit9(m,m.t==24?[0,2,3,4][OPT.diff]:[0,2,2,3][OPT.diff],dx/(d||1),dz/(d||1))}
+  return true}
+// Skelett: hält Abstand, läuft seitlich hin und her und schießt Pfeile
+function skelAI9(m,dt,d,dx,dz,A){var T=MT[25];m.aim9=m.see9&&d<16;
+  if(m.aim9){m.strT9=(m.strT9||0)-dt;if(m.strT9<=0){m.strT9=1.5+Math.random()*2;m.str9=Math.random()<.5?1:-1}var st=m.str9||1,nx=dx/(d||1),nz=dz/(d||1),g;
+    if(d>11)g={x:pos.x,z:pos.z};else if(d<5.5)g={x:m.x-nx*4,z:m.z-nz*4};else g={x:m.x-nz*st*3,z:m.z+nx*st*3};
+    A.g=monPath9(m,dt,g);A.s=d>11?T.sp:1.6;m.tT=1;
+    m.bowT9=(m.bowT9==null?1.2:m.bowT9)-dt;if(m.bowT9<=0){m.bowT9=[0,2.4,1.9,1.4][OPT.diff]+Math.random()*.7;arrowShoot9(m)}}
+  else{m.bowT9=Math.max(m.bowT9||0,.8);A.g=monPath9(m,dt,{x:pos.x,z:pos.z});A.s=T.sp;m.tT=1}
+  return true}
+// Arme: Zombies strecken sie nach vorn, Skelette heben sie zum Zielen
+function monFace9(m,dt){var ay=Math.atan2(-(pos.x-m.x),-(pos.z-m.z)),dyw=ay-m.yaw;while(dyw>Math.PI)dyw-=6.283;while(dyw<-Math.PI)dyw+=6.283;m.yaw+=dyw*Math.min(1,8*dt)}
+function humPost9(m,dt,pd){var hs=Math.hypot(m.vx,m.vz),amp=Math.min(1,hs/1.1)*.8,sw=Math.cos(m.wp)*amp,R=mPart(m,'armR'),L=mPart(m,'armL');
+  if(m.tg9&&(m.aim9||hs<.4)&&!m.dead)monFace9(m,dt);
+  if(m.t==24){var at=m.sw9>0?Math.sin(m.sw9/.35*Math.PI)*.7:0,bob=Math.sin(mobT*2.4+m.x)*.06;if(R){R.rx=1.45+bob-at;R.ry=-.08;R.rz=0}if(L){L.rx=1.45-bob-at;L.ry=.08;L.rz=0}}
+  else if(m.aim9){var pt=Math.atan2(pos.y+1.3-(m.y+1.5),Math.hypot(pos.x-m.x,pos.z-m.z)),pull=m.bowT9!=null&&m.bowT9<.7?.12:0;if(R){R.rx=1.57+pt;R.ry=-.12;R.rz=0}if(L){L.rx=1.57+pt-pull;L.ry=.5;L.rz=0}}
+  else{if(R){R.rx=-sw*.9;R.ry=0;R.rz=-.05}if(L){L.rx=sw*.9;L.ry=0;L.rz=.05}}}
+// Spinnenbeine: gespreizt, laufen paarweise im Wechsel
+var SPYB9=[.785,.393,-.393,-.785],SPZB9=[.62,.5,.5,.62];
+function spiderPost9(m,dt,pd){var hs=Math.hypot(m.vx,m.vz),amp=Math.min(1,(hs+(m.clb9>0?2:0))/1.2),w=m.wp*1.6+(m.clb9>0?mobT*14:0),i=0;if(m.tg9&&hs<.4&&!m.dead)monFace9(m,dt);
+  m.parts.forEach(function(p){if(p.n!='sleg')return;var k=i>>1,r=(i&1)?-1:1,ph=[0,Math.PI,Math.PI*.5,Math.PI*1.5][k]+(r<0?Math.PI:0);
+    p.rx=0;p.ry=r*SPYB9[k]+Math.sin(w+ph)*.38*amp*r;p.rz=-r*SPZB9[k]+Math.max(0,Math.cos(w+ph))*.35*amp*r;i++})}
+// Leuchtende Spinnenaugen (bleiben auch nachts hell)
+var SPEYE9=null;
+function spiderAct9(m){var h=mPart(m,'head');if(!h)return;if(!SPEYE9){var cv=document.createElement('canvas');cv.width=cv.height=8;var g=cv.getContext('2d');
+    for(var v=0;v<8;v++)for(var u=0;u<8;u++){var ch=SPFACE9[v][u];if(ch=='E'||ch=='e'){g.fillStyle=ch=='E'?'#ff3a3a':'#e02222';g.fillRect(u,v,1,1)}}
+    var tx=new THREE.CanvasTexture(cv);tx.magFilter=tx.minFilter=THREE.NearestFilter;tx.generateMipmaps=false;
+    SPEYE9={g:new THREE.PlaneGeometry(.5,.5),m:new THREE.MeshBasicMaterial({map:tx,transparent:true,alphaTest:.5})}}
+  var e=new THREE.Mesh(SPEYE9.g,SPEYE9.m);e.position.set(0,0,-.505);e.rotation.y=Math.PI;h.mesh.add(e)}
+function monHurt9(m,fx,fz){m.panic=0;m.tgt=null;m.wt9=null;if(!ATK9){m.ang9=30;m.tg9=true}}
+[24,25,26].forEach(function(t){var T=MT[t];T.ai=monAI9;T.hurt9=monHurt9;T.post=t==26?spiderPost9:humPost9;if(t==26)T.onAct=spiderAct9});
+MT[24].drops=function(m,o){var n=Math.random()*3|0;for(var i=0;i<n;i++)o.push(338);if(Math.random()<.025)o.push([42,92,93][Math.random()*3|0])};
+MT[25].drops=function(m,o){var n=Math.random()*3|0;for(var i=0;i<n;i++)o.push(256)};
+MT[26].drops=function(m,o){var n=Math.random()*3|0;for(var i=0;i<n;i++)o.push(257);if(Math.random()<1/3)o.push(339)};
+// Flammen an brennenden Monstern
+var flameC9=null;
+function flame9(x,y,z){if(PARTS.length>90||OPT.part==2||(OPT.part==1&&Math.random()<.5))return;
+  if(!flameC9)flameC9=nt(pxc(6,6,function(a,b){var d=Math.hypot(a-2.5,(b-3)*.85);if(d>2.7||(b<2&&Math.abs(a-2.5)>1.2))return 'rgba(0,0,0,0)';return b<2?'#ffe27a':d<1.3?'#ffc63a':'#f0661c'}));
+  var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:flameC9,transparent:true,depthWrite:false,fog:false}));var s=.3+Math.random()*.22;sp.scale.set(s,s,s);sp.position.set(x,y,z);scene.add(sp);
+  PARTS.push({s:sp,vx:(Math.random()-.5)*.3,vy:1+Math.random()*.6,vz:(Math.random()-.5)*.3,life:.35+Math.random()*.25})}
 function mobSave(){return MOBS.filter(function(m){return!m.dead&&!MT[m.t].fish&&!MT[m.t].ns}).map(function(m){return[m.t,Math.round(m.x*10)/10,Math.round(m.y*10)/10,Math.round(m.z*10)/10,Math.round(m.yaw*100)/100,(m.baby?1:0)|(m.sheared?2:0)|(m.col<<2)|((m.vr||0)<<5),Math.round(m.age)].concat(m.t>=20?[mobXS9(m)]:[])})}
 function mobLoad(a){a.forEach(function(r){var t=r[0],col=(r[5]>>2)&7;if(t==2&&GENV>=4&&mtnAt(r[1],r[3])>.45&&r[2]>SEA+12){t=5;col=0}var m9=newMob(t,r[1],r[2],r[3],{yaw:r[4],baby:!!(r[5]&1),sh:t==2&&!!(r[5]&2),col:col,vr:(r[5]>>5)&15,age:r[6]||0});if(SAVE&&!SAVE.mv)varApply9(m9,Math.random());if(r[7])mobXL9(m9,r[7])})}
 if(SAVE&&SAVE.mob)try{mobLoad(SAVE.mob)}catch(e){}
@@ -3783,7 +3921,7 @@ MDEF[11]={parts:[
 var tipEl=document.createElement('div');tipEl.id='tipbox';tipEl.innerHTML='<i></i><b>Tipp</b><span></span>';document.body.appendChild(tipEl);
 tipEl.querySelector('i').style.backgroundImage='url('+bookIco+')';
 var coordsEl=document.createElement('div');coordsEl.id='coords';document.body.appendChild(coordsEl);
-var TIPS9={night:'Es wird Nacht. In einem Bett schläfst du bis zum Morgen, und Fackeln bringen Licht ins Dunkel.',food:'Dein Hunger wird knapp. Halte Essen in der Hand und tippe, um zu essen.',
+var TIPS9={night:'Es wird Nacht – jetzt kommen Monster heraus! In einem Bett schläfst du bis zum Morgen, und Fackeln halten Monster fern.',food:'Dein Hunger wird knapp. Halte Essen in der Hand und tippe, um zu essen.',
   air:'Unter Wasser geht dir die Luft aus. Halte ▲ gedrückt, um nach oben zu schwimmen.',wood:'Du hast Holz! Öffne das Inventar (Truhen-Knopf oben links) und mach daraus Bretter und eine Werkbank.',
   book:'Das grüne Buch im Inventar zeigt alle Rezepte. Gedrückt halten zeigt nur, was du gerade herstellen kannst.',bench:'Stell die Werkbank auf und tippe sie an – dort hast du 3 × 3 Felder für Werkzeuge wie Spitzhacken.',
   ore:'Aus 8 Bruchstein baust du einen Ofen. Darin wird aus Erz ein Barren – Kohle oder Holz dienen als Brennstoff.',drop:'Halte ein Hotbar-Feld gedrückt, um Gegenstände fallen zu lassen.',
@@ -4623,7 +4761,7 @@ var CMD9={
   summon:{h:'/summon <Tier> [Anzahl] – Tier erscheinen lassen: Schwein, Kuh, Schaf, Huhn, Hase, Ziege, Frosch, Wolf, Fuchs, Fledermaus, Fische',sug:function(i){return i==0?MOBL9:i==1?['1','3','5']:null},
     run:function(a){var t=MOBN9[nrm9(a[0]||'')];if(t==null)return chatMsg9('Unbekanntes Tier. Möglich: '+MOBL9.join(', '),'err');var n=Math.max(1,Math.min(20,parseInt(a[1],10)||1));
       for(var k=0;k<n;k++){var dx=-Math.sin(yaw)*3+(k?(Math.random()-.5)*3:0),dz=-Math.cos(yaw)*3+(k?(Math.random()-.5)*3:0),x=pos.x+dx,z=pos.z+dz,tp=topAt(Math.floor(x),Math.floor(z)),y=Math.max(pos.y,tp+1);
-        if(t>=7&&t<=9)y=pos.y+.5;var m=newMob(t,x,y,z,t==21?{col:biomeAt(Math.floor(x),Math.floor(z))==8?1:0}:t==22?{col:Math.random()*7|0}:{});if(t<=6)varApply9(m,Math.random())}
+        if(t>=7&&t<=9)y=pos.y+.5;var m=newMob(t,x,y,z,t==21?{col:biomeAt(Math.floor(x),Math.floor(z))==8?1:0}:t==22?{col:Math.random()*7|0}:(MOBC9[nrm9(a[0]||'')]||{}));if(t<=6)varApply9(m,Math.random())}
       chatMsg9(n+' × '+MOBD9[t]+' erscheint','hl')}},
   setblock:{h:'/setblock <x> <y> <z> <Block> – einen Block setzen (~ = relativ). "luft" entfernt den Block',sug:function(i,a){return i<3?['~']:itemSug9(a.slice(3).join(' '))},
     run:function(a){if(a.length<4)return chatMsg9('Benutze: /setblock x y z Block','err');fillCmd9(a.slice(0,3).concat(a.slice(0,3)),a.slice(3).join(' '))}},
@@ -4725,12 +4863,87 @@ function shq9(){var q=+(OPT.shd==null?2:OPT.shd)||0;if(q>=3&&(!hi9()||renderer.c
 function shR9(R){if(SH9.R===R||!SH9.cam)return;SH9.R=R;var c=SH9.cam;c.left=c.bottom=-R;c.right=c.top=R;c.updateProjectionMatrix();SHU9.uShR9.value.set(R*.72,R*.95);SH9.on=false;SH9.chg=true}
 // Fenster wird größer (z. B. Vollbild): Auflösung neu begrenzen
 window.addEventListener('resize',function(){var p=pr9();if(Math.abs(renderer.getPixelRatio()-p)>.01){renderer.setPixelRatio(p);resize()}});
+// ---------- Version 58: Monster erscheinen nachts und in dunklen Höhlen, Pfeile, Gift und Hunger ----------
+// Spawnen wie in Minecraft: nur wo kein Fackellicht hinkommt, nachts an der Oberfläche oder jederzeit tief unter der Erde, 24–44 Blöcke vom Spieler entfernt
+var MON9={t:2};
+function monCap9(){return[0,8,12,16][OPT.diff]|0}
+function monSpot9(t,x,y,z,rmin){var g=get(x,y-1,z),a=get(x,y,z),b=get(x,y+1,z);
+  if(SOL[g]!==1||LEAF[g]||g==9||g==140||g==14||g==159||g==160||g==161)return false;
+  if((a&&(SOL[a]||a==14))||(b&&(SOL[b]||b==14)))return false;
+  if(lvAt(x,y,z)>0||lvAt(x,y+1,z)>0)return false;
+  if(Math.hypot(x+.5-pos.x,z+.5-pos.z)<rmin)return false;
+  return!mobHit({t:t,baby:false},x+.5,y,z+.5)}
+function monSpawn9(dt){MON9.t-=dt;if(MON9.t>0)return;MON9.t=1;var i,m;
+  // Friedlich: alle Monster verschwinden sofort
+  if(!OPT.diff){for(i=MOBS.length-1;i>=0;i--)if(isMon9(MOBS[i].t)){m=MOBS[i];if(m.act)mobDeact(m);MOBS.splice(i,1)}return}
+  // Weit entfernte Monster verschwinden (ab 36 Blöcken nach und nach, ab 96 sofort)
+  var n=0,sk=skyK9();for(i=MOBS.length-1;i>=0;i--){m=MOBS[i];if(!isMon9(m.t)||m.dead)continue;var d=Math.hypot(m.x-pos.x,m.z-pos.z);
+    if(d>96||(d>36&&Math.random()<.025)||(m.t==26&&!m.tg9&&sk>.7&&d>24&&Math.random()<.02)){if(m.act)mobDeact(m);MOBS.splice(i,1);continue}if(d<72)n++}
+  if(n>=monCap9()||PLAYT<12||deadT>0)return;
+  var dark=sk<.3||WX9.t>.6,AR=Math.min(RD*16,52*ent9()),rmax=Math.max(16,Math.min(44,AR-4)),rmin=Math.min(24,rmax*.55);
+  for(var tr=0;tr<6;tr++){var a=Math.random()*6.283,r=rmin+Math.random()*(rmax-rmin),x=Math.floor(pos.x+Math.cos(a)*r),z=Math.floor(pos.z+Math.sin(a)*r),c=chunk(x>>4,z>>4);if(!c||!c.meshed)continue;
+    var tp=topAt(x,z),y,surf=false;
+    if(dark&&Math.random()<.6){y=tp+1;surf=true}else{y=Math.floor(pos.y+(Math.random()-.5)*24);if(y>tp-5)continue}
+    if(y<2||y>=WY-3)continue;
+    var w=Math.random(),t=w<.37?24:w<.72?25:26;if(!monSpot9(t,x,y,z,rmin))continue;
+    var bi=surf?biomeAt(x,z):-1,col=(t==24&&bi==5)||(t==25&&bi==8)?1:0,k=t==26?1:1+(Math.random()<.4?1:0)+(Math.random()<.12?1:0);
+    for(var j=0;j<k;j++){var sx=x+(j?Math.round((Math.random()-.5)*3):0),sz=z+(j?Math.round((Math.random()-.5)*3):0);if(j&&!monSpot9(t,sx,y,sz,rmin*.8))continue;
+      var baby=t==24&&Math.random()<.05;newMob(t,sx+.5,y+.01,sz+.5,{col:col,baby:baby,age:baby?1e9:0})}
+    return}}
+function monNear9(r){for(var i=0;i<MOBS.length;i++){var m=MOBS[i];if(isMon9(m.t)&&!m.dead&&Math.hypot(m.x-pos.x,m.z-pos.z)<r&&Math.abs(m.y-pos.y)<5)return true}return false}
+// ---- Pfeile der Skelette
+var ARR9=[],ARRG9=null;
+function arrowMesh9(){if(!ARRG9)ARRG9={sh:new THREE.BoxGeometry(.035,.035,.62),hd:new THREE.BoxGeometry(.08,.08,.1),fa:new THREE.BoxGeometry(.13,.006,.15),fb:new THREE.BoxGeometry(.006,.13,.15),
+    ms:new THREE.MeshBasicMaterial({color:0x8a6236}),mh:new THREE.MeshBasicMaterial({color:0x9a9a9a}),mf:new THREE.MeshBasicMaterial({color:0xeeeeee})};
+  var G=ARRG9,g=new THREE.Group(),a=new THREE.Mesh(G.sh,G.ms),b=new THREE.Mesh(G.hd,G.mh),c=new THREE.Mesh(G.fa,G.mf),e=new THREE.Mesh(G.fb,G.mf);b.position.z=.33;c.position.z=-.24;e.position.z=-.24;g.add(a);g.add(b);g.add(c);g.add(e);return g}
+function arrowShoot9(m){var sx=m.x,sy=m.y+1.5,sz=m.z,dx=pos.x-sx,dz=pos.z-sz,h=Math.hypot(dx,dz)||1,v=22,t=h/v,vy=(pos.y+1.1-sy)/t+10*t,inac=[0,.09,.06,.035][OPT.diff]||.06;
+  var vx=dx/h*v+(Math.random()-.5)*2*inac*v,vz=dz/h*v+(Math.random()-.5)*2*inac*v;vy+=(Math.random()-.5)*2*inac*v;
+  var o={x:sx+dx/h*.55,y:sy,z:sz+dz/h*.55,vx:vx,vy:vy,vz:vz,own:m,t:0,stk:0,m:arrowMesh9(),dmg:[0,2,3,4][OPT.diff]+(Math.random()<.4?1:0)};
+  o.m.position.set(o.x,o.y,o.z);o.m.lookAt(o.x+vx,o.y+vy,o.z+vz);scene.add(o.m);ARR9.push(o);if(ARR9.length>40){var r=ARR9.shift();scene.remove(r.m)}SND.bow(mobVol(m)+.15)}
+function updArrows9(dt){if(!ARR9.length)return;if(paused9())return;var br=Math.max(.32,DAYB);if(ARRG9){ARRG9.ms.color.setRGB(.54*br,.38*br,.21*br);ARRG9.mh.color.setRGB(.6*br,.6*br,.6*br);ARRG9.mf.color.setRGB(.93*br,.93*br,.93*br)}
+  for(var i=ARR9.length-1;i>=0;i--){var a=ARR9[i];a.t+=dt;
+    if(a.stk>0){a.stk-=dt;if(a.stk<=0){scene.remove(a.m);ARR9.splice(i,1)}continue}
+    if(a.t>8){scene.remove(a.m);ARR9.splice(i,1);continue}
+    var sp=Math.sqrt(a.vx*a.vx+a.vy*a.vy+a.vz*a.vz),n=Math.max(1,Math.ceil(sp*dt/.2)),h=dt/n,gone=false;
+    for(var s=0;s<n;s++){a.vy-=20*h;var nx=a.x+a.vx*h,ny=a.y+a.vy*h,nz=a.z+a.vz*h;
+      if(monOK9()&&Math.abs(nx-pos.x)<.38&&Math.abs(nz-pos.z)<.38&&ny>pos.y&&ny<pos.y+1.85){var l=Math.hypot(a.vx,a.vz)||1;monHit9(a.own,a.dmg,a.vx/l,a.vz/l,true);SND.arrow(1);gone=true;break}
+      var hm=null;for(var j=0;j<ACT.length;j++){var q=ACT[j];if(q===a.own||q.dead||!q.act)continue;var sc=mobScale(q),e=MT[q.t].hw*sc+.05;if(Math.abs(nx-q.x)<e&&Math.abs(nz-q.z)<e&&ny>q.y&&ny<q.y+MT[q.t].ht*sc){hm=q;break}}
+      if(hm){predHit9(a.own&&MOBS.indexOf(a.own)>=0?a.own:{x:a.x,z:a.z,t:-1},hm,a.dmg);SND.arrow(mobVol(hm));gone=true;break}
+      if(solid(nx,ny,nz)){a.stk=6;SND.arrow(Math.max(0,1-Math.hypot(a.x-pos.x,a.z-pos.z)/16)*.6);break}
+      a.x=nx;a.y=ny;a.z=nz}
+    if(gone){scene.remove(a.m);ARR9.splice(i,1);continue}
+    a.m.position.set(a.x,a.y,a.z);if(!(a.stk>0))a.m.lookAt(a.x+a.vx,a.y+a.vy,a.z+a.vz)}}
+// ---- Wirkungen: Hunger (verrottetes Fleisch, Wüstenzombie), Gift (Spinnenauge), Langsamkeit (Pfeil vom Eiswanderer); Milch hebt alles auf
+function effTick9(dt){if(EFF9.hun>0){EFF9.hun-=dt;exh+=dt*.25}
+  if(EFF9.poi>0){EFF9.poi-=dt;EFF9.poiA+=dt;if(EFF9.poiA>=1.25){EFF9.poiA=0;if(hp>1)hurt(1)}}
+  if(EFF9.slow>0)EFF9.slow-=dt;
+  var k=(EFF9.poi>0?'p':'')+(EFF9.hun>0?'h':'')+(EFF9.slow>0?'s':'');if(k!==EFF9.on){EFF9.on=k;hpEl.style.filter=EFF9.poi>0?'hue-rotate(95deg) saturate(1.5)':'';foodEl.style.filter=EFF9.hun>0?'hue-rotate(75deg) saturate(.8) brightness(.92)':''}}
+function effClear9(){EFF9.hun=EFF9.poi=EFF9.slow=0}
+function eatFx9(id){if(id==111)effClear9();else if(id==338&&Math.random()<.8){EFF9.hun=Math.max(EFF9.hun,30);toast('Verdorben – du bekommst schneller Hunger',1.8)}else if(id==339){EFF9.poi=Math.max(EFF9.poi,5);EFF9.poiA=0;toast('Giftig!',1.4)}}
+// ---- Tod durch ein Monster: Meldung im Chat und auf dem Bildschirm
+function deathMsg9(){var t=KILL9&&mobT-KILL9.at<4?KILL9.msg:under?'Du bist ertrunken':'Du bist gestorben';KILL9=null;effClear9();chatMsg9(t,'sys');
+  try{var d=document.getElementById('dead');d.style.flexDirection='column';d.innerHTML='Du bist gestorben'+(t!='Du bist gestorben'?'<span style="display:block;font-size:15px;font-weight:400;margin-top:10px;opacity:.9">'+t+'</span>':'')}catch(e){}}
+// ---- Chat: Monster beschwören
+(function(){var A={zombie:24,skelett:25,skeleton:25,spinne:26,spider:26,wuestenzombie:24,husk:24,eiswanderer:25,stray:25,babyzombie:24};for(var k in A)MOBN9[k]=A[k];
+  MOBD9[24]='Zombie';MOBD9[25]='Skelett';MOBD9[26]='Spinne';MOBL9.push('Zombie','Skelett','Spinne','Wüstenzombie','Eiswanderer');
+  if(CMD9.summon)CMD9.summon.h='/summon <Tier> [Anzahl] – Tier oder Monster erscheinen lassen: Schwein, Kuh, Schaf, Huhn, Hase, Ziege, Frosch, Wolf, Fuchs, Fledermaus, Fische, Zombie, Skelett, Spinne'})();
+var MOBC9={wuestenzombie:{col:1},husk:{col:1},eiswanderer:{col:1},stray:{col:1},babyzombie:{baby:true,age:1e9}};
+TIPS9.monster='Achtung, ein Monster! Zombies, Skelette und Spinnen kommen nachts und in dunklen Höhlen heraus. Wo Fackeln leuchten, tauchen keine auf – und mit einem Schwert wehrst du dich.';
+var MONT9=0;
+function updV58(dt){monSpawn9(dt);updArrows9(dt);effTick9(dt)}
+// ---- /kill monster: alle Monster in der Nähe besiegen (ohne Angabe stirbt wie bisher der Spieler)
+(function(){var k0=CMD9.kill;if(!k0)return;var run0=k0.run;k0.h='/kill [monster|zombie|skelett|spinne] – ohne Angabe stirbst du und erscheinst am Spawnpunkt; mit Angabe werden diese Monster besiegt';
+  k0.sug=function(i){return i==0?['monster','zombie','skelett','spinne']:null};
+  k0.run=function(a){var w=nrm9(a&&a[0]||'');if(!w)return run0.apply(this,arguments);var T={monster:0,monsters:0,zombie:24,zombies:24,skelett:25,skelette:25,skeleton:25,spinne:26,spinnen:26,spider:26}[w];
+    if(T==null)return chatMsg9('Unbekannt: '+a[0]+' – möglich: monster, zombie, skelett, spinne','err');var n=0;
+    for(var i=MOBS.length-1;i>=0;i--){var m=MOBS[i];if(!isMon9(m.t)||m.dead||(T&&m.t!=T)||Math.hypot(m.x-pos.x,m.z-pos.z)>128)continue;n++;if(m.act){m.hp=0;m.dead=true;m.deadT=0;m.pk9=1;SND.mob(m.t,'die',mobVol(m),m.col)}else MOBS.splice(i,1)}
+    chatMsg9(n+' Monster besiegt','hl')}})();
 function loop(now){if(OPT.fps==1&&now-last<30){requestAnimationFrame(loop);return}
   var dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;frame++;
   stream(now-startT<2500?14:(RD>8?8:5));if(frame%30==0)unload();
   kbmTick(dt);ctl10(dt);step(dt);target=pick();setUnder(wat(camera.position.x,camera.position.y,camera.position.z));
   if(target){var tb9=target.box||FULLB;hlb.visible=true;hlb.position.set(target.h[0]+(tb9[0]+tb9[3])/2,target.h[1]+(tb9[1]+tb9[4])/2,target.h[2]+(tb9[2]+tb9[5])/2);hlb.scale.set(Math.max(.03,tb9[3]-tb9[0]),Math.max(.03,tb9[4]-tb9[1]),Math.max(.03,tb9[5]-tb9[2]))}else hlb.visible=false;
-  survival(dt);daynight(dt);updClouds(dt);updFurnaces(dt);updFurnFX(dt);updLids(dt);updFalls(dt);updRegen(dt);updRacks(dt);updBoats(dt);updAvatar(dt);updDecay(dt);updHand(dt);updOff(dt);updFlames(dt);updGrass(dt);updWater(dt);footsteps(dt);updHandLight();updMobs(dt);updEat(dt);updSleep(dt);updLeafFx(dt);updV42(dt);updV44(dt);updV45(dt);updV46(dt);updV47(dt);updV48(dt);updV49(dt);updV51(dt);updV53(dt);updV54(dt);updV55(dt);updV56(dt);
+  survival(dt);daynight(dt);updClouds(dt);updFurnaces(dt);updFurnFX(dt);updLids(dt);updFalls(dt);updRegen(dt);updRacks(dt);updBoats(dt);updAvatar(dt);updDecay(dt);updHand(dt);updOff(dt);updFlames(dt);updGrass(dt);updWater(dt);footsteps(dt);updHandLight();updMobs(dt);updEat(dt);updSleep(dt);updLeafFx(dt);updV42(dt);updV44(dt);updV45(dt);updV46(dt);updV47(dt);updV48(dt);updV49(dt);updV51(dt);updV53(dt);updV54(dt);updV55(dt);updV56(dt);updV58(dt);
   if(lightDirty){lightDirty=false;relight(false)}
   updName(dt);updItems(dt);if(holdMine())mine(dt);else{mineT=0;mineKey=null;mineEl.style.display='none'}
   flushUrgent();
@@ -5011,6 +5224,20 @@ var SND=(function(){
     if(k=='sleep'){var x3=svf(envAD(noise(Math.round(1*SR)),.4,.3),'lp',650,.7);return norm(x3,.25)}
     if(k=='hurt'){var d2=.24;return voice({dur:d2,f0:curve([[0,1350*p],[d2,900*p]]),amp:curve([[0,0],[.01,1],[d2,0]]),rough:.25,breath:.3,tilt:5500,form:[[1500,4,1],[3000,6,.4]],pk:.8})}
     var d3=.5;return voice({dur:d3,f0:curve([[0,1150*p],[d3,500*p]]),amp:curve([[0,0],[.02,1],[d3*.7,.6],[d3,0]]),rough:.25,breath:.3,tilt:5000,form:[[1400,4,1],[2800,6,.4]],pk:.8})};
+  // ---- Version 58: Monster – Zombie (Stöhnen), Skelett (klappernde Knochen), Spinne (Zischen und Klicken)
+  VOX.zombie=function(k){var p=rr(.9,1.1);
+    if(k=='say'){var d=rr(.9,1.35);return voice({dur:d,f0:curve([[0,92*p],[d*.35,112*p],[d*.7,104*p],[d,78*p]]),amp:curve([[0,0],[.18,1],[d*.55,.75],[d*.7,.95],[d,0]]),rough:.75,breath:.28,jitter:.14,trem:.3,tremR:rr(5,8),tilt:1300,
+      form:[[curve([[0,380],[d*.4,520],[d,420]]),4,1],[curve([[0,760],[d*.4,950],[d,800]]),6,.55],[2300,8,.16]],nasal:220,pk:.85})}
+    if(k=='hurt'){var d2=rr(.28,.36);return voice({dur:d2,f0:curve([[0,170*p],[.06,190*p],[d2,115*p]]),amp:curve([[0,0],[.02,1],[d2*.6,.8],[d2,0]]),rough:.6,breath:.25,jitter:.1,tilt:1700,form:[[560,5,1],[1150,6,.5],[2400,8,.15]],pk:.85})}
+    var d3=rr(1,1.25);return voice({dur:d3,f0:curve([[0,150*p],[.15,160*p],[d3,55*p]]),amp:curve([[0,0],[.05,1],[d3*.6,.7],[d3,0]]),rough:.8,breath:.3,jitter:.16,tilt:1400,form:[[curve([[0,520],[d3,340]]),4,1],[curve([[0,1000],[d3,700]]),6,.5],[2200,8,.12]],pk:.85})};
+  function boneClick9(x,t,f,a){modes(x,[[f,.010,a],[f*1.73,.007,a*.6],[f*2.6,.005,a*.35]],t);add(x,envAD(svf(noise(Math.round(.008*SR)),'hp',2500,.8),.0004,.002),a*.5,Math.round(t*SR))}
+  VOX.skeleton=function(k){var L=k=='die'?1:k=='hurt'?.35:.6,x=N(L),n=k=='die'?22:k=='hurt'?9:6+(R()*5|0),t=0;
+    for(var i=0;i<n;i++){var f=rr(1300,2300)*(k=='die'?1-i/n*.35:1);boneClick9(x,t,f,rr(.4,1));t+=k=='hurt'?rr(.012,.03):k=='die'?rr(.02,.06)*(1+i/n):rr(.035,.08);if(t>L-.05)break}
+    if(k!='say')add(x,thump(L,220,.04,.5),.6);if(k=='die')add(x,thump(L,160,.05,.5),.5,Math.round(.6*SR));return norm(x,k=='say'?.55:.8)};
+  VOX.spider=function(k){var L=k=='die'?.8:k=='hurt'?.3:rr(.45,.7),x=svf(svf(noise(Math.round(L*SR)),'bp',function(t){return k=='die'?5200-t*3500:4600+900*Math.sin(t*40)},.9),'hp',1800,.7);
+    for(var i=0;i<x.length;i++){var t=i/SR,e=t<.04?t/.04:Math.exp(-(t-.04)/(L*.45));x[i]*=e*(.75+.25*Math.sin(t*6.283*(k=='say'?23:31)))}
+    var c=k=='say'?5+(R()*4|0):k=='hurt'?4:8;for(var j=0;j<c;j++){var b=envAD(svf(noise(Math.round(.012*SR)),'bp',rr(1500,3200),3),.0005,.003);add(x,b,rr(.5,1),Math.round(rr(0,L*.8)*SR))}
+    return norm(x,k=='say'?.5:.75)};
   var MOBV=['pig','cow','sheep','chicken','rabbit','goat','frog','fish','fish','fish'];
   function mobBuf(t,k){var nm=MOBV[t]||'chicken';if(nm=='fish'&&k=='say')return null;return pickLo('v:'+nm+':'+k,k=='say'?4:3,function(){return VOX[nm](k)})}
   // =================== weitere Geräusche ===================
@@ -5082,6 +5309,10 @@ var SND=(function(){
     for(var i=0;i<n;i++){var t=i/SR,e=0;for(var b=0;b<B.length;b++){var q=B[b],dt=t-q[0];e+=dt<0?q[1]*Math.exp(dt/(near?.02:.35)):q[1]*Math.exp(-dt/q[2])}x[i]*=e*Math.min(1,t/(near?.004:.25))*Math.max(0,1-t/L)}return x}
   FX.thunder=function(){var x=rumble9(6,420,.02,1),cr=svf(envAD(noise(Math.round(.35*SR)),.0008,.06),'hp',700,.7);add(x,cr,.9);add(x,svf(envAD(noise(Math.round(.5*SR)),.002,.12),'bp',1600,.8),.5,Math.round(.05*SR));return norm(x,.95)};
   FX.thunderFar=function(){return norm(rumble9(7,190,.5,0),.9)};
+  // ---- Version 58: Bogensehne und Pfeil-Einschlag
+  FX.bow=function(){var L=.42,x=N(L);modes(x,[[rr(105,125),.09,.8],[rr(220,250),.06,.45],[rr(330,370),.04,.25],[rr(900,1100),.02,.15]],0);
+    var w=svf(svf(noise(Math.round(.3*SR)),'bp',function(t){return 900+t*5000},.8),'lp',6000,.7);envAD(w,.02,.08);add(x,w,.6,Math.round(.01*SR));return norm(x,.75)};
+  FX.arrowHit=function(){var L=.22,x=N(L);modes(x,[[rr(380,460),.03,.7],[rr(900,1100),.015,.4],[rr(1900,2300),.008,.2]],0);add(x,thump(L,240,.025,.8),1);return norm(x,.8)};
   function fx(k,v,rate){play(function(){out((k=='pop'||k=='click'||k=='shear'?pick:pickLo)('fx:'+k,3,FX[k]),v==null?1:v,rate||rr(.94,1.06))})}
   var API={init:init,isOn:function(){return on},setVol:function(v){vS=v;if(sg)sg.gain.value=v},setMus:function(v){vM=v;if(mu)mu.gain.value=v*.9},
     toggle:function(){on=!on;try{BWLS.setItem('blockwelt-sound',on?'1':'0')}catch(e){}init();if(mg)mg.gain.value=on?.9*vMa:0;return on},
@@ -5096,6 +5327,7 @@ var SND=(function(){
     crackle:function(v){play(function(){out(pick('crk',8,function(){return norm(svf(grains(.2,3+(R()*3|0),.15,.001,.004,1,0,1),'bp',rr(2500,4500),1.5),.4)}),v||.5,rr(.9,1.1))})},
     mob:function(t,k,v,col){play(function(){v=Math.max(.05,Math.min(1,v||1));
       if(t==23){out(pickLo('bat:hurt',2,FX.batHurt),.5*v,rr(.95,1.1));return}
+      if(t>=24&&t<=26){var mn=['zombie','skeleton','spider'][t-24];out(pickLo('v:'+mn+':'+k,k=='say'?3:2,function(){return VOX[mn](k)}),(k=='say'?.6:.8)*v,rr(.93,1.07)*(t==24&&(col&1)?.86:t==25&&(col&1)?.92:1));return}
       if(t==20){if(k!='say')out(pick('b:hurt',3,BIRD.hurt),.6*v,rr(.9,1.15)*([3,7,8,11].indexOf((col||0)&15)>=0?.6:1));return}
       if(t==21||t==22){var nm=t==21?'fox':'wolf';out(pickLo('v:'+nm+':'+k,3,function(){return VOX[nm](k)}),(k=='say'?.55:.75)*v,rr(.95,1.05));return}
       if(t==5&&k=='ram'){out(pick('fx:whoosh',2,FX.whoosh),.5*v);setTimeout(function(){out(matBuf('wood',true),.9*v,.8);out(toBuf(thump(.2,140,.05,.9)),.8*v)},90);return}
@@ -5118,6 +5350,8 @@ var SND=(function(){
     rain:function(l,muf){if(!ac)return;try{if(!RAMB){if(l<.02||!on||ac.state!=='running')return;var b=lo(function(){return toBuf(rainLoop())}),s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=b;s.loop=true;f.type='lowpass';f.frequency.value=12000;g.gain.value=0;s.connect(f);f.connect(g);g.connect(catG.env||sg);s.start();RAMB={s:s,f:f,g:g,v:0,m:-1}}
       var tv=on?Math.max(0,Math.min(1,l))*.42:0;if(Math.abs(tv-RAMB.v)>.004){RAMB.v=tv;RAMB.g.gain.setTargetAtTime(tv,ac.currentTime,.7)}var mf=muf?1:0;if(mf!==RAMB.m){RAMB.m=mf;RAMB.f.frequency.setTargetAtTime(mf?650:12000,ac.currentTime,.25)}}catch(e){}},
     thunder:function(d){play(function(){var near=d<30,v=Math.max(.2,Math.min(1,1.3-d/110));out(pickLo(near?'wx:thunder':'wx:thunderFar',2,near?FX.thunder:FX.thunderFar),v*.95,rr(.85,1.08))})},
+    bow:function(v){play(function(){out(pickLo('fx:bow',3,FX.bow),.55*Math.max(.05,Math.min(1,v||1)),rr(.92,1.1))})},
+    arrow:function(v){play(function(){out(pickLo('fx:arrow',3,FX.arrowHit),.6*Math.max(.03,Math.min(1,v==null?1:v)),rr(.9,1.12))})},
     eat:function(){fx('eat',.6,rr(.9,1.15))},burp:function(){fx('burp',.6)},drink:function(){fx('drink',.6)},till:function(){fx('till',.7)},shear:function(){fx('shear',.6)},
     bucket:function(fill){fx(fill?'fill':'pour',.65)},throwE:function(){fx('whoosh',.45)},
     horn:function(){play(function(){var o=function(p){var t=ac.currentTime+(p.t||0),s=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();s.type=p.ty;s.frequency.setValueAtTime(p.f,t);s.frequency.exponentialRampToValueAtTime(p.f2,t+p.d);
@@ -5223,7 +5457,7 @@ var SND=(function(){
   API.setMusFreq=function(f){var old=M9.fq||1;M9.fq=f;if(ac&&!M9.cur&&M9.gapUntil>ac.currentTime)M9.gapUntil=ac.currentTime+(M9.gapUntil-ac.currentTime)*f/old};
   API.setMenuMusic=function(b){M9.menuOff=!b};
   API._cats=function(){var o={};for(var k in catG)o[k]=catG[k].gain.value;return{master:mg?mg.gain.value:null,cats:o,fq:M9.fq,menuOff:M9.menuOff}};
-  (function(){var CM={block:function(a){return a[1]=='step'||a[1]=='land'?'ply':'blk'},door:'blk',chest:'blk',craft:'blk',till:'blk',bucket:'blk',crackle:'env',cave:'env',drip:'env',bat:'mob',scrape:'blk',rain:'env',thunder:'env',splash:'env',bubble:'env',
+  (function(){var CM={block:function(a){return a[1]=='step'||a[1]=='land'?'ply':'blk'},door:'blk',chest:'blk',craft:'blk',till:'blk',bucket:'blk',crackle:'env',cave:'env',drip:'env',bat:'mob',scrape:'blk',bow:'mob',arrow:'mob',rain:'env',thunder:'env',splash:'env',bubble:'env',
       swim:'ply',mob:'mob',bird:'mob',wolf:'mob',fox:'mob',flap:'mob',orb:'ply',lvl:'ply',shatter:'blk',horn:'mob',shear:'mob',hurt:'ply',die:'ply',eat:'ply',burp:'ply',drink:'ply',throwE:'ply',toolBreak:'ply',pop:'ply'};
     Object.keys(CM).forEach(function(k){var f=API[k];if(typeof f!='function')return;API[k]=function(){var c=CM[k],pv=CAT;CAT=typeof c=='function'?c(arguments):c;try{return f.apply(API,arguments)}finally{CAT=pv}}})})();
   return API})();
@@ -5261,7 +5495,7 @@ var BWOPT=(function(){
   function pct(v){return v?v+' %':'Aus'}
   var FMT={fov:function(v){return v==70?'Normal':v==110?'Quake Pro':v},rd:function(v){return v+' Chunks'},bri:function(v){return v==0?'Düster':v==100?'Hell':v==50?'Mittel':v+' %'},
     sens:function(v){return v+' %'},psens:function(v){return v+' %'},msens:function(v){return v+' %'},btn:function(v){return v+' %'}};
-  var DIFFD=['Kein Hunger, und dein Leben füllt sich schnell wieder auf.','Hunger zieht dir höchstens bis auf 5 Herzen Leben ab.','Hunger kann dich bis auf ein halbes Herz bringen.','Hunger kann tödlich sein, und Ziegen stoßen härter zu.'];
+  var DIFFD=['Keine Monster, kein Hunger, und dein Leben füllt sich schnell wieder auf.','Monster richten wenig Schaden an. Hunger zieht dir höchstens bis auf 5 Herzen Leben ab.','Monster richten normalen Schaden an. Hunger kann dich bis auf ein halbes Herz bringen.','Monster schlagen hart zu und Skelette zielen genauer. Hunger kann tödlich sein, und Ziegen stoßen härter zu.'];
   var DESC={fov:'Wie weit du zur Seite sehen kannst.',tips:'Zeigt beim Spielen hilfreiche Hinweise, z. B. zum Bett oder zum Rezeptbuch, und die Bedienhilfe beim Start.',
     tipreset:'Alle Tipps, die du schon gesehen hast, erscheinen noch einmal.',ajump:'Läufst du gegen eine Stufe aus einem Block, springst du von selbst hoch.',
     sneakHold:'Umschalten: Ducken-Knopf einmal antippen. Halten: nur geduckt, solange du den Knopf festhältst.',coords:'Zeigt oben links deine Position in der Welt.',
